@@ -13,11 +13,11 @@ class StreamUrlResolver @Inject constructor(
     private val api: MusicApi,
     private val okHttp: OkHttpClient,
 ) {
-    suspend fun resolve(trackId: String): String? = withContext(Dispatchers.IO) {
+    suspend fun resolve(trackId: String, preferredBitrate: Int): String? = withContext(Dispatchers.IO) {
         val options = api.downloadInfo(trackId).result
-        val pick = options
-            .filter { it.codec.equals("mp3", ignoreCase = true) }
-            .maxByOrNull { it.bitrateInKbps }
+        val mp3 = options.filter { it.codec.equals("mp3", ignoreCase = true) }
+        val pick = mp3.filter { it.bitrateInKbps <= preferredBitrate }.maxByOrNull { it.bitrateInKbps }
+            ?: mp3.minByOrNull { it.bitrateInKbps }
             ?: options.firstOrNull()
             ?: return@withContext null
 

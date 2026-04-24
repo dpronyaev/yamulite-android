@@ -8,6 +8,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.pdv.yamulite.data.music.StreamUrlResolver
 import dev.pdv.yamulite.data.music.dto.TrackDto
+import dev.pdv.yamulite.data.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,6 +34,8 @@ data class PlaybackUi(
 class AudioPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
     private val resolver: StreamUrlResolver,
+    private val settings: SettingsStore,
+    private val downloads: DownloadManager,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -113,8 +116,11 @@ class AudioPlayer @Inject constructor(
             hasPrevious = hasPrevious(),
         )
         resolveJob = scope.launch {
-            val url = runCatching { resolver.resolve(track.id) }
-                .getOrElse {
+            val url = downloads.localPath(track.id)?.let { "file://$it" }
+                ?: runCatching {
+                    val q = settings.currentQuality()
+                    resolver.resolve(track.id, q.bitrate)
+                }.getOrElse {
                     _state.value = _state.value.copy(isLoading = false, error = it.message ?: "resolve failed")
                     return@launch
                 }

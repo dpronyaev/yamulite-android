@@ -2,13 +2,18 @@ package dev.pdv.yamulite.ui.main.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.pdv.yamulite.data.music.dto.TrackDto
+import dev.pdv.yamulite.data.playback.DownloadInfo
+import dev.pdv.yamulite.data.playback.DownloadState
 
 fun TrackDto.displayLine(): String {
     val artist = artists.joinToString(", ") { it.name }
@@ -36,17 +43,19 @@ fun TrackDto.displayLine(): String {
 fun TrackRow(
     track: TrackDto,
     isLiked: Boolean,
+    download: DownloadInfo?,
     onClick: () -> Unit,
     onLikeToggle: () -> Unit,
+    onDownloadClick: () -> Unit,
 ) {
     val cover = track.coverUri ?: track.albums.firstOrNull()?.coverUri
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         CoverImage(coverUri = cover)
         Text(
@@ -58,17 +67,51 @@ fun TrackRow(
         )
         IconButton(onClick = onLikeToggle, modifier = Modifier.size(40.dp)) {
             if (isLiked) {
-                Icon(
-                    Icons.Filled.Favorite,
-                    contentDescription = "Убрать из избранного",
-                    tint = Color(0xFFE53935),
+                Icon(Icons.Filled.Favorite, contentDescription = "Убрать из избранного", tint = Color(0xFFE53935))
+            } else {
+                Icon(Icons.Outlined.FavoriteBorder, contentDescription = "В избранное")
+            }
+        }
+        DownloadButton(download = download, onClick = onDownloadClick)
+    }
+}
+
+@Composable
+private fun DownloadButton(download: DownloadInfo?, onClick: () -> Unit) {
+    when (download?.state) {
+        null -> IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Outlined.CloudDownload, contentDescription = "Скачать")
+        }
+        DownloadState.Failed -> IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+            Icon(
+                Icons.Outlined.ErrorOutline,
+                contentDescription = "Повторить скачивание",
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
+        DownloadState.Downloading -> Box(
+            modifier = Modifier.size(40.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (download.progress > 0f) {
+                CircularProgressIndicator(
+                    progress = { download.progress },
+                    modifier = Modifier.size(28.dp),
+                    strokeWidth = 3.dp,
                 )
             } else {
-                Icon(
-                    Icons.Outlined.FavoriteBorder,
-                    contentDescription = "В избранное",
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    strokeWidth = 3.dp,
                 )
             }
+        }
+        DownloadState.Done -> IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+            Icon(
+                Icons.Filled.CloudDone,
+                contentDescription = "Удалить скачанное",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

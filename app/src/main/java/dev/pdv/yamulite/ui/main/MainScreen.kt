@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,11 +24,13 @@ import androidx.navigation.compose.rememberNavController
 import dev.pdv.yamulite.ui.main.favorites.FavoritesScreen
 import dev.pdv.yamulite.ui.main.nowplaying.NowPlayingScreen
 import dev.pdv.yamulite.ui.main.search.SearchScreen
+import dev.pdv.yamulite.ui.main.settings.SettingsScreen
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Search("search", "Поиск", Icons.Filled.Search),
     Favorites("favorites", "Избранное", Icons.Filled.Favorite),
     NowPlaying("now", "Сейчас", Icons.Filled.PlayArrow),
+    Settings("settings", "Настройки", Icons.Filled.Settings),
 }
 
 @Composable
@@ -67,6 +70,7 @@ fun MainScreen() {
             composable(Tab.Search.route) { SearchScreen() }
             composable(Tab.Favorites.route) { FavoritesScreen() }
             composable(Tab.NowPlaying.route) { NowPlayingScreen() }
+            composable(Tab.Settings.route) { SettingsScreen() }
         }
     }
 }

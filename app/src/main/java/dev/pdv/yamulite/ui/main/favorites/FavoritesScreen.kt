@@ -24,6 +24,7 @@ import dev.pdv.yamulite.ui.main.components.TrackRow
 fun FavoritesScreen(vm: FavoritesViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val likedIds by vm.likedIds.collectAsStateWithLifecycle()
+    val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -47,8 +48,10 @@ fun FavoritesScreen(vm: FavoritesViewModel = hiltViewModel()) {
                     TrackRow(
                         track = track,
                         isLiked = track.id in likedIds,
+                        download = downloadStates[track.id],
                         onClick = { vm.play(state.tracks, idx) },
                         onLikeToggle = { vm.toggleLike(track.id) },
+                        onDownloadClick = { vm.onDownloadClick(track.id) },
                     )
                 }
             }

@@ -34,6 +34,7 @@ import dev.pdv.yamulite.ui.main.components.TrackRow
 fun SearchScreen(vm: SearchViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val likedIds by vm.likedIds.collectAsStateWithLifecycle()
+    val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -81,7 +82,7 @@ fun SearchScreen(vm: SearchViewModel = hiltViewModel()) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.Center).padding(16.dp),
                 )
-                else -> Results(state, likedIds, vm::toggleLike, vm::play)
+                else -> Results(state, likedIds, downloadStates, vm::toggleLike, vm::play, vm::onDownloadClick)
             }
         }
     }
@@ -91,8 +92,10 @@ fun SearchScreen(vm: SearchViewModel = hiltViewModel()) {
 private fun Results(
     state: SearchUiState,
     likedIds: Set<String>,
+    downloadStates: Map<String, dev.pdv.yamulite.data.playback.DownloadInfo>,
     onToggleLike: (String) -> Unit,
     onPlay: (List<dev.pdv.yamulite.data.music.dto.TrackDto>, Int) -> Unit,
+    onDownloadClick: (String) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         when (state.type) {
@@ -101,8 +104,10 @@ private fun Results(
                     TrackRow(
                         track = track,
                         isLiked = track.id in likedIds,
+                        download = downloadStates[track.id],
                         onClick = { onPlay(state.results.tracks, idx) },
                         onLikeToggle = { onToggleLike(track.id) },
+                        onDownloadClick = { onDownloadClick(track.id) },
                     )
                 }
                 if (state.results.tracks.isEmpty()) item { EmptyHint() }

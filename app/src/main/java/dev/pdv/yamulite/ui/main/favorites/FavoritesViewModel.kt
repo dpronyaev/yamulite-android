@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pdv.yamulite.data.music.MusicRepository
 import dev.pdv.yamulite.data.music.dto.TrackDto
 import dev.pdv.yamulite.data.playback.AudioPlayer
+import dev.pdv.yamulite.data.playback.DownloadManager
+import dev.pdv.yamulite.data.playback.DownloadState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,9 +24,20 @@ data class FavoritesUiState(
 class FavoritesViewModel @Inject constructor(
     private val repo: MusicRepository,
     private val player: AudioPlayer,
+    private val downloads: DownloadManager,
 ) : ViewModel() {
 
+    val downloadStates = downloads.downloads
+
     fun play(tracks: List<TrackDto>, startIndex: Int) = player.play(tracks, startIndex)
+
+    fun onDownloadClick(trackId: String) {
+        if (downloads.downloads.value[trackId]?.state == DownloadState.Done) {
+            downloads.delete(trackId)
+        } else {
+            downloads.download(trackId)
+        }
+    }
 
 
     private val _state = MutableStateFlow(FavoritesUiState())
