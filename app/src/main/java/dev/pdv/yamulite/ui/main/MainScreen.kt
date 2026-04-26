@@ -17,10 +17,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import dev.pdv.yamulite.ui.main.album.AlbumScreen
+import dev.pdv.yamulite.ui.main.artist.ArtistScreen
 import dev.pdv.yamulite.ui.main.favorites.FavoritesScreen
 import dev.pdv.yamulite.ui.main.nowplaying.NowPlayingScreen
 import dev.pdv.yamulite.ui.main.search.SearchScreen
@@ -67,10 +71,30 @@ fun MainScreen() {
             startDestination = Tab.Search.route,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            composable(Tab.Search.route) { SearchScreen() }
+            composable(Tab.Search.route) {
+                SearchScreen(
+                    onArtistClick = { id -> nav.navigate("artist/$id") },
+                    onAlbumClick = { id -> nav.navigate("album/$id") },
+                )
+            }
             composable(Tab.Favorites.route) { FavoritesScreen() }
             composable(Tab.NowPlaying.route) { NowPlayingScreen() }
             composable(Tab.Settings.route) { SettingsScreen() }
+            composable(
+                route = "artist/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.LongType }),
+            ) {
+                ArtistScreen(
+                    onBack = { nav.popBackStack() },
+                    onAlbumClick = { id -> nav.navigate("album/$id") },
+                )
+            }
+            composable(
+                route = "album/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.LongType }),
+            ) {
+                AlbumScreen(onBack = { nav.popBackStack() })
+            }
         }
     }
 }

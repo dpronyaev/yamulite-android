@@ -1,7 +1,9 @@
 package dev.pdv.yamulite.data.music
 
 import dev.pdv.yamulite.data.music.dto.AccountStatusDto
+import dev.pdv.yamulite.data.music.dto.AlbumWithTracksDto
 import dev.pdv.yamulite.data.music.dto.ApiResponse
+import dev.pdv.yamulite.data.music.dto.ArtistBriefDto
 import dev.pdv.yamulite.data.music.dto.DownloadInfoDto
 import dev.pdv.yamulite.data.music.dto.LibraryDto
 import dev.pdv.yamulite.data.music.dto.RevisionDto
@@ -53,4 +55,10 @@ interface MusicApi {
 
     @GET("tracks/{id}/download-info")
     suspend fun downloadInfo(@Path("id") trackId: String): ApiResponse<List<DownloadInfoDto>>
+
+    @GET("artists/{id}/brief-info")
+    suspend fun artistBriefInfo(@Path("id") artistId: Long): ApiResponse<ArtistBriefDto>
+
+    @GET("albums/{id}/with-tracks")
+    suspend fun albumWithTracks(@Path("id") albumId: Long): ApiResponse<AlbumWithTracksDto>
 }

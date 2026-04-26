@@ -1,6 +1,8 @@
 package dev.pdv.yamulite.data.music
 
 import dev.pdv.yamulite.data.music.dto.AlbumDto
+import dev.pdv.yamulite.data.music.dto.AlbumWithTracksDto
+import dev.pdv.yamulite.data.music.dto.ArtistBriefDto
 import dev.pdv.yamulite.data.music.dto.ArtistDto
 import dev.pdv.yamulite.data.music.dto.TrackDto
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -77,6 +79,12 @@ class MusicRepository @Inject constructor(
         api.unlikeTracks(u, trackId)
         _likedIds.update { it - trackId }
     }
+
+    suspend fun artistBrief(artistId: Long): ArtistBriefDto =
+        api.artistBriefInfo(artistId).result
+
+    suspend fun album(albumId: Long): AlbumWithTracksDto =
+        api.albumWithTracks(albumId).result
 
     fun resetSession() {
         cachedUid = null

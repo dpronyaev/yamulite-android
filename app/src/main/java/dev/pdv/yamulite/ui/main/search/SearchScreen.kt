@@ -31,7 +31,11 @@ import dev.pdv.yamulite.ui.main.components.ArtistRow
 import dev.pdv.yamulite.ui.main.components.TrackRow
 
 @Composable
-fun SearchScreen(vm: SearchViewModel = hiltViewModel()) {
+fun SearchScreen(
+    onArtistClick: (Long) -> Unit = {},
+    onAlbumClick: (Long) -> Unit = {},
+    vm: SearchViewModel = hiltViewModel(),
+) {
     val state by vm.state.collectAsStateWithLifecycle()
     val likedIds by vm.likedIds.collectAsStateWithLifecycle()
     val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
@@ -82,7 +86,7 @@ fun SearchScreen(vm: SearchViewModel = hiltViewModel()) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.Center).padding(16.dp),
                 )
-                else -> Results(state, likedIds, downloadStates, vm::toggleLike, vm::play, vm::onDownloadClick)
+                else -> Results(state, likedIds, downloadStates, vm::toggleLike, vm::play, vm::onDownloadClick, onArtistClick, onAlbumClick)
             }
         }
     }
@@ -96,6 +100,8 @@ private fun Results(
     onToggleLike: (String) -> Unit,
     onPlay: (List<dev.pdv.yamulite.data.music.dto.TrackDto>, Int) -> Unit,
     onDownloadClick: (String) -> Unit,
+    onArtistClick: (Long) -> Unit,
+    onAlbumClick: (Long) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         when (state.type) {
@@ -114,13 +120,13 @@ private fun Results(
             }
             SearchType.Artists -> {
                 items(state.results.artists, key = { it.id }) { artist ->
-                    ArtistRow(artist)
+                    ArtistRow(artist, onClick = { onArtistClick(artist.id) })
                 }
                 if (state.results.artists.isEmpty()) item { EmptyHint() }
             }
             SearchType.Albums -> {
                 items(state.results.albums, key = { it.id }) { album ->
-                    AlbumRow(album)
+                    AlbumRow(album, onClick = { onAlbumClick(album.id) })
                 }
                 if (state.results.albums.isEmpty()) item { EmptyHint() }
             }

@@ -82,3 +82,20 @@ data class LikedTrackRefDto(
 
 @Serializable
 data class RevisionDto(val revision: Long = 0)
+
+@Serializable
+data class ArtistBriefDto(
+    val artist: ArtistDto = ArtistDto(),
+    val popularTracks: List<TrackDto> = emptyList(),
+    val albums: List<AlbumDto> = emptyList(),
+)
+
+@Serializable
+data class AlbumWithTracksDto(
+    val id: Long = 0,
+    val title: String = "",
+    val coverUri: String? = null,
+    val artists: List<ArtistShortDto> = emptyList(),
+    val year: Int? = null,
+    val volumes: List<List<TrackDto>> = emptyList(),
+)
