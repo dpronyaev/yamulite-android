@@ -3,7 +3,7 @@
 An unofficial Android client for Yandex Music, written in Kotlin with Jetpack Compose. Plays tracks, manages likes, downloads music for offline listening, and adapts to both phone screens and wide automotive head units.
 
 <p align="center">
-  <img src="docs/screenshots/now_playing.png" width="780" alt="Now Playing on a 1920×720 head unit"/>
+  <img src="docs/screenshots/now_playing.png" width="320" alt="Now Playing screen with seek bar"/>
 </p>
 
 ## Features
@@ -13,7 +13,7 @@ An unofficial Android client for Yandex Music, written in Kotlin with Jetpack Co
 - **Artist** page with popular tracks and full discography
 - **Album** page with the complete track list, cover, year and artists
 - **Favorites** — server-synced liked tracks
-- **Now Playing** — large cover, transport controls, like toggle, adaptive layout for landscape/wide screens
+- **Now Playing** — large cover, transport controls, seek bar with position / duration, like toggle, adaptive layout for landscape/wide screens
 - **Offline downloads** — per-track download with progress, stored in app-private storage
 - **Quality selector** — Low / Normal / High / Best, applied to both streaming and downloads
 - **Material 3** with bottom navigation (Search / Favorites / Now Playing / Settings)
@@ -85,7 +85,6 @@ YaMuLite intentionally keeps its scope small. The following are **not implemente
 - OAuth token refresh on expiry
 - Logout button (clear app data via system settings to re-auth)
 - Lossless / AAC / Opus codecs — mp3 only
-- Seek bar / position display
 - Resumable / WorkManager-backed downloads
 - Pagination of search and favorites results
 - Real-time like state from server (only refreshed when entering Favorites)
