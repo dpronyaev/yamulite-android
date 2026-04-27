@@ -21,6 +21,7 @@ class NowPlayingViewModel @Inject constructor(
     fun togglePlayPause() = player.togglePlayPause()
     fun next() = player.next()
     fun previous() = player.previous()
+    fun seekTo(positionMs: Long) = player.seekTo(positionMs)
 
     fun toggleLike() = viewModelScope.launch {
         val id = state.value.track?.id ?: return@launch

@@ -19,9 +19,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -120,6 +124,7 @@ private fun TrackDetails(
         state.error?.let {
             Text("Ошибка: $it", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         }
+        SeekBar(state = state, onSeek = vm::seekTo)
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
@@ -157,4 +162,57 @@ private fun TrackDetails(
             }
         }
     }
+}
+
+@Composable
+private fun SeekBar(state: PlaybackUi, onSeek: (Long) -> Unit) {
+    val duration = state.durationMs
+    var dragging by remember { mutableStateOf(false) }
+    var dragValue by remember { mutableStateOf(0f) }
+    val sliderValue = if (dragging) dragValue
+    else if (duration > 0) state.positionMs.coerceIn(0L, duration).toFloat()
+    else 0f
+    val maxValue = if (duration > 0) duration.toFloat() else 1f
+    val displayMs = if (dragging) dragValue.toLong() else state.positionMs
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Slider(
+            value = sliderValue.coerceIn(0f, maxValue),
+            valueRange = 0f..maxValue,
+            enabled = duration > 0,
+            onValueChange = {
+                dragging = true
+                dragValue = it
+            },
+            onValueChangeFinished = {
+                if (dragging) {
+                    onSeek(dragValue.toLong())
+                    dragging = false
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        ) {
+            Text(
+                text = formatTime(displayMs),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = formatTime(duration),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun formatTime(ms: Long): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0L)
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%d:%02d".format(minutes, seconds)
 }

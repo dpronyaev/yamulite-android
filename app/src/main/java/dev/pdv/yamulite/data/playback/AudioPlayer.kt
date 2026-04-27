@@ -13,9 +13,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -28,6 +30,8 @@ data class PlaybackUi(
     val error: String? = null,
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
+    val positionMs: Long = 0L,
+    val durationMs: Long = 0L,
 )
 
 @Singleton
@@ -43,6 +47,7 @@ class AudioPlayer @Inject constructor(
     private var queue: List<TrackDto> = emptyList()
     private var index: Int = -1
     private var resolveJob: Job? = null
+    private var positionJob: Job? = null
 
     private val _state = MutableStateFlow(PlaybackUi())
     val state: StateFlow<PlaybackUi> = _state.asStateFlow()
@@ -53,8 +58,10 @@ class AudioPlayer @Inject constructor(
         p.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _state.value = _state.value.copy(isPlaying = isPlaying)
+                if (isPlaying) startPositionUpdates() else stopPositionUpdates()
             }
             override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) syncPositionAndDuration()
                 if (state == Player.STATE_ENDED) {
                     if (hasNext()) next() else _state.value = _state.value.copy(isPlaying = false)
                 }
@@ -69,6 +76,36 @@ class AudioPlayer @Inject constructor(
         })
         player = p
         return p
+    }
+
+    private fun startPositionUpdates() {
+        if (positionJob?.isActive == true) return
+        positionJob = scope.launch {
+            while (isActive) {
+                syncPositionAndDuration()
+                delay(500)
+            }
+        }
+    }
+
+    private fun stopPositionUpdates() {
+        positionJob?.cancel()
+        positionJob = null
+        syncPositionAndDuration()
+    }
+
+    private fun syncPositionAndDuration() {
+        val p = player ?: return
+        val pos = p.currentPosition.coerceAtLeast(0L)
+        val dur = p.duration.let { if (it > 0) it else 0L }
+        _state.value = _state.value.copy(positionMs = pos, durationMs = dur)
+    }
+
+    fun seekTo(positionMs: Long) {
+        val p = player ?: return
+        val clamped = positionMs.coerceAtLeast(0L)
+        p.seekTo(clamped)
+        syncPositionAndDuration()
     }
 
     fun play(tracks: List<TrackDto>, startIndex: Int = 0) {
@@ -97,6 +134,8 @@ class AudioPlayer @Inject constructor(
 
     fun stop() {
         resolveJob?.cancel()
+        positionJob?.cancel()
+        positionJob = null
         player?.stop()
         queue = emptyList()
         index = -1
