@@ -27,11 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.pdv.yamulite.data.settings.CodecPreference
 import dev.pdv.yamulite.data.settings.Quality
 
 @Composable
 fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
     val current by vm.quality.collectAsStateWithLifecycle()
+    val currentCodec by vm.codec.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
@@ -67,6 +69,25 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
             ) {
                 RadioButton(selected = current == q, onClick = { vm.setQuality(q) })
                 Text(q.label, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "Кодек",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Spacer(Modifier.height(8.dp))
+        CodecPreference.entries.forEach { c ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { vm.setCodec(c) }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                RadioButton(selected = currentCodec == c, onClick = { vm.setCodec(c) })
+                Text(c.label, style = MaterialTheme.typography.bodyLarge)
             }
         }
         Spacer(Modifier.height(8.dp))

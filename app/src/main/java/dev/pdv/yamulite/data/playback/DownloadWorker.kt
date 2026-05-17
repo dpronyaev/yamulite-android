@@ -8,6 +8,7 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dev.pdv.yamulite.data.music.StreamUrlResolver
+import dev.pdv.yamulite.data.settings.CodecPreference
 import dev.pdv.yamulite.data.settings.SettingsStore
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -31,7 +32,8 @@ class DownloadWorker @AssistedInject constructor(
 
         return try {
             val q = settings.currentQuality()
-            val url = resolver.resolve(trackId, q.bitrate)
+            // Downloads are always mp3 — DownloadManager is hardcoded to .mp3 extension
+            val url = resolver.resolve(trackId, q.bitrate, CodecPreference.Mp3Only)
                 ?: return Result.failure(workDataOf(KEY_ERROR to "Не удалось получить ссылку"))
 
             okHttp.newCall(Request.Builder().url(url).build()).execute().use { resp ->

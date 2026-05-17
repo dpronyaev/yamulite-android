@@ -19,15 +19,25 @@ class SettingsStore @Inject constructor(
 ) {
     private object Keys {
         val QUALITY = stringPreferencesKey("quality")
+        val CODEC = stringPreferencesKey("codec")
     }
 
     val quality: Flow<Quality> = context.settingsDataStore.data.map { p ->
         Quality.entries.firstOrNull { it.name == p[Keys.QUALITY] } ?: Quality.High
     }
 
+    val codec: Flow<CodecPreference> = context.settingsDataStore.data.map { p ->
+        CodecPreference.entries.firstOrNull { it.name == p[Keys.CODEC] } ?: CodecPreference.AacPreferred
+    }
+
     suspend fun setQuality(q: Quality) {
         context.settingsDataStore.edit { it[Keys.QUALITY] = q.name }
     }
 
+    suspend fun setCodec(c: CodecPreference) {
+        context.settingsDataStore.edit { it[Keys.CODEC] = c.name }
+    }
+
     suspend fun currentQuality(): Quality = quality.first()
+    suspend fun currentCodec(): CodecPreference = codec.first()
 }
