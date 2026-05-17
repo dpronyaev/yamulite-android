@@ -28,6 +28,9 @@ data class SearchUiState(
     val loading: Boolean = false,
     val results: SearchResults = SearchResults(),
     val error: String? = null,
+    val likeError: String? = null,
+    val hasMore: Boolean = false,
+    val loadingMore: Boolean = false,
 )
 
 @OptIn(FlowPreview::class)
@@ -50,13 +53,13 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-
     private val _state = MutableStateFlow(SearchUiState())
     val state: StateFlow<SearchUiState> = _state.asStateFlow()
     val likedIds = repo.likedIds
 
     private val queryFlow = MutableStateFlow("")
     private var inflightJob: Job? = null
+    private var searchPage = 0
 
     init {
         queryFlow
@@ -78,7 +81,41 @@ class SearchViewModel @Inject constructor(
     }
 
     fun toggleLike(trackId: String) = viewModelScope.launch {
-        if (trackId in repo.likedIds.value) repo.unlike(trackId) else repo.like(trackId)
+        val result = if (trackId in repo.likedIds.value) repo.unlike(trackId) else repo.like(trackId)
+        result.onFailure {
+            _state.value = _state.value.copy(likeError = it.message ?: "Ошибка при изменении лайка")
+        }
+    }
+
+    fun clearLikeError() {
+        _state.value = _state.value.copy(likeError = null)
+    }
+
+    fun loadMore() {
+        if (_state.value.loadingMore || !_state.value.hasMore) return
+        val q = _state.value.query.trim()
+        val type = _state.value.type
+        if (q.isBlank()) return
+        _state.value = _state.value.copy(loadingMore = true)
+        val nextPage = searchPage + 1
+        viewModelScope.launch {
+            runCatching { repo.search(q, type, nextPage) }
+                .onSuccess { newResults ->
+                    searchPage = nextPage
+                    _state.value = _state.value.copy(
+                        loadingMore = false,
+                        hasMore = hasMoreResults(newResults, type),
+                        results = SearchResults(
+                            tracks = _state.value.results.tracks + newResults.tracks,
+                            artists = _state.value.results.artists + newResults.artists,
+                            albums = _state.value.results.albums + newResults.albums,
+                        ),
+                    )
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(loadingMore = false)
+                }
+        }
     }
 
     private fun runSearch() {
@@ -86,18 +123,36 @@ class SearchViewModel @Inject constructor(
         val type = _state.value.type
         inflightJob?.cancel()
         if (q.isBlank()) {
-            _state.value = _state.value.copy(loading = false, results = SearchResults(), error = null)
+            _state.value = _state.value.copy(
+                loading = false, results = SearchResults(), error = null, hasMore = false
+            )
             return
         }
+        searchPage = 0
         _state.value = _state.value.copy(loading = true, error = null)
         inflightJob = viewModelScope.launch {
-            runCatching { repo.search(q, type) }
-                .onSuccess {
-                    _state.value = _state.value.copy(loading = false, results = it, error = null)
+            runCatching { repo.search(q, type, 0) }
+                .onSuccess { results ->
+                    _state.value = _state.value.copy(
+                        loading = false,
+                        results = results,
+                        error = null,
+                        hasMore = hasMoreResults(results, type),
+                    )
                 }
                 .onFailure {
-                    _state.value = _state.value.copy(loading = false, error = it.message ?: "Ошибка поиска")
+                    _state.value = _state.value.copy(
+                        loading = false,
+                        error = it.message ?: "Ошибка поиска",
+                        hasMore = false,
+                    )
                 }
         }
+    }
+
+    private fun hasMoreResults(results: SearchResults, type: SearchType): Boolean = when (type) {
+        SearchType.Tracks -> results.tracks.size >= MusicRepository.SEARCH_PAGE_SIZE
+        SearchType.Artists -> results.artists.size >= MusicRepository.SEARCH_PAGE_SIZE
+        SearchType.Albums -> results.albums.size >= MusicRepository.SEARCH_PAGE_SIZE
     }
 }

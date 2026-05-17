@@ -22,4 +22,13 @@ interface AuthApi {
         @Field("client_id") clientId: String,
         @Field("client_secret") clientSecret: String,
     ): Response<TokenResponse>
+
+    @FormUrlEncoded
+    @POST("token")
+    suspend fun refreshToken(
+        @Field("grant_type") grantType: String,
+        @Field("refresh_token") refreshToken: String,
+        @Field("client_id") clientId: String,
+        @Field("client_secret") clientSecret: String,
+    ): Response<TokenResponse>
 }

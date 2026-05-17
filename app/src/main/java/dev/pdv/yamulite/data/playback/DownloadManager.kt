@@ -1,19 +1,23 @@
 package dev.pdv.yamulite.data.playback
 
 import android.content.Context
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.pdv.yamulite.data.music.StreamUrlResolver
-import dev.pdv.yamulite.data.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,16 +33,20 @@ data class DownloadInfo(
 
 @Singleton
 class DownloadManager @Inject constructor(
-    @ApplicationContext context: Context,
-    private val resolver: StreamUrlResolver,
-    private val settings: SettingsStore,
-    private val okHttp: OkHttpClient,
+    @ApplicationContext private val context: Context,
+    private val workManager: WorkManager,
 ) {
-    private val baseDir: File = File(context.filesDir, "tracks").also { it.mkdirs() }
+    private val baseDir = File(context.filesDir, "tracks").also { it.mkdirs() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _downloads = MutableStateFlow<Map<String, DownloadInfo>>(scanLocal())
     val downloads: StateFlow<Map<String, DownloadInfo>> = _downloads.asStateFlow()
+
+    init {
+        workManager.getWorkInfosByTagFlow(TAG_DOWNLOAD)
+            .onEach { infos -> applyWorkInfos(infos) }
+            .launchIn(scope)
+    }
 
     fun localPath(trackId: String): String? {
         val f = fileFor(trackId)
@@ -49,57 +57,72 @@ class DownloadManager @Inject constructor(
         val current = _downloads.value[trackId]?.state
         if (current == DownloadState.Downloading || current == DownloadState.Done) return
         _downloads.update { it + (trackId to DownloadInfo(DownloadState.Downloading)) }
-        scope.launch {
-            runCatching {
-                val q = settings.currentQuality()
-                val url = resolver.resolve(trackId, q.bitrate) ?: error("Не удалось получить ссылку")
-                val tmp = File(baseDir, "${safeName(trackId)}.mp3.part")
-                val dest = fileFor(trackId)
-                okHttp.newCall(Request.Builder().url(url).build()).execute().use { resp ->
-                    val body = resp.body ?: error("Пустой ответ")
-                    val total = body.contentLength()
-                    body.byteStream().use { input ->
-                        tmp.outputStream().use { output ->
-                            val buf = ByteArray(64 * 1024)
-                            var soFar = 0L
-                            while (true) {
-                                val n = input.read(buf)
-                                if (n == -1) break
-                                output.write(buf, 0, n)
-                                soFar += n
-                                if (total > 0) {
-                                    val progress = (soFar.toFloat() / total).coerceIn(0f, 1f)
-                                    _downloads.update {
-                                        it + (trackId to DownloadInfo(DownloadState.Downloading, progress))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (!tmp.renameTo(dest)) {
-                    tmp.copyTo(dest, overwrite = true)
-                    tmp.delete()
-                }
-                _downloads.update {
-                    it + (trackId to DownloadInfo(DownloadState.Done, 1f, dest.absolutePath))
-                }
-            }.onFailure { e ->
-                _downloads.update {
-                    it + (trackId to DownloadInfo(DownloadState.Failed, error = e.message))
-                }
-            }
-        }
+        val request = OneTimeWorkRequestBuilder<DownloadWorker>()
+            .setInputData(workDataOf(DownloadWorker.KEY_TRACK_ID to trackId))
+            .setConstraints(
+                Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            )
+            .addTag(TAG_DOWNLOAD)
+            .addTag("$TAG_TRACK_PREFIX${safeName(trackId)}")
+            .build()
+        workManager.enqueueUniqueWork("download_${safeName(trackId)}", ExistingWorkPolicy.KEEP, request)
     }
 
     fun delete(trackId: String) {
+        workManager.cancelUniqueWork("download_${safeName(trackId)}")
         fileFor(trackId).delete()
         File(baseDir, "${safeName(trackId)}.mp3.part").delete()
         _downloads.update { it - trackId }
     }
 
+    private fun applyWorkInfos(infos: List<WorkInfo>) {
+        _downloads.update { current ->
+            val merged = current.toMutableMap()
+            for (info in infos) {
+                val safeId = info.tags
+                    .firstOrNull { it.startsWith(TAG_TRACK_PREFIX) }
+                    ?.removePrefix(TAG_TRACK_PREFIX) ?: continue
+                val trackId = safeId.replace("_", ":")
+                when (info.state) {
+                    WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
+                        if (merged[trackId]?.state != DownloadState.Done)
+                            merged[trackId] = DownloadInfo(DownloadState.Downloading, 0f)
+                    }
+                    WorkInfo.State.RUNNING -> {
+                        if (merged[trackId]?.state != DownloadState.Done)
+                            merged[trackId] = DownloadInfo(
+                                DownloadState.Downloading,
+                                info.progress.getFloat(DownloadWorker.KEY_PROGRESS, 0f),
+                            )
+                    }
+                    WorkInfo.State.SUCCEEDED -> {
+                        if (merged[trackId]?.state != DownloadState.Done) {
+                            val file = fileFor(trackId)
+                            merged[trackId] = DownloadInfo(
+                                DownloadState.Done, 1f,
+                                file.absolutePath.takeIf { file.exists() },
+                            )
+                        }
+                    }
+                    WorkInfo.State.FAILED -> {
+                        if (merged[trackId]?.state != DownloadState.Done)
+                            merged[trackId] = DownloadInfo(
+                                DownloadState.Failed,
+                                error = info.outputData.getString(DownloadWorker.KEY_ERROR),
+                            )
+                    }
+                    WorkInfo.State.CANCELLED -> {
+                        if (merged[trackId]?.state == DownloadState.Downloading)
+                            merged.remove(trackId)
+                    }
+                }
+            }
+            merged
+        }
+    }
+
     private fun fileFor(trackId: String) = File(baseDir, "${safeName(trackId)}.mp3")
-    private fun safeName(trackId: String) = trackId.replace(":", "_")
+    private fun safeName(id: String) = id.replace(":", "_")
 
     private fun scanLocal(): Map<String, DownloadInfo> {
         if (!baseDir.exists()) return emptyMap()
@@ -109,5 +132,10 @@ class DownloadManager @Inject constructor(
                 val id = f.nameWithoutExtension.replace("_", ":")
                 id to DownloadInfo(DownloadState.Done, 1f, f.absolutePath)
             }
+    }
+
+    companion object {
+        private const val TAG_DOWNLOAD = "download"
+        private const val TAG_TRACK_PREFIX = "track_"
     }
 }

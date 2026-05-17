@@ -44,6 +44,9 @@ class TokenStore @Inject constructor(
         }
     }
 
+    suspend fun getRefreshToken(): String? =
+        context.authDataStore.data.first()[Keys.REFRESH]
+
     suspend fun getOrCreateDeviceId(): String {
         context.authDataStore.data.first()[Keys.DEVICE_ID]?.let { return it }
         val id = UUID.randomUUID().toString()

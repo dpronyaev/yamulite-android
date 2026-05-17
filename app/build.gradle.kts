@@ -81,4 +81,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.media3.exoplayer)
+
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.androidx.compiler)
 }

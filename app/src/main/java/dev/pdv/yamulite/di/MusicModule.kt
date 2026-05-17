@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.pdv.yamulite.data.music.AuthInterceptor
 import dev.pdv.yamulite.data.music.MusicApi
+import dev.pdv.yamulite.data.music.TokenRefreshAuthenticator
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -28,9 +29,11 @@ object MusicModule {
     fun provideMusicRetrofit(
         json: Json,
         authInterceptor: AuthInterceptor,
+        tokenRefreshAuthenticator: TokenRefreshAuthenticator,
     ): Retrofit {
         val client = OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .authenticator(tokenRefreshAuthenticator)
             .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
             .build()
         return Retrofit.Builder()

@@ -78,16 +78,11 @@ The debug APK is ~21 MB. First build takes about a minute (downloading dependenc
 
 ## Limitations
 
-YaMuLite intentionally keeps its scope small. The following are **not implemented**:
+The following are **not implemented**:
 
 - Background playback / `MediaSessionService` / media notification — playback stops when the app is backgrounded
 - Bluetooth media-button control (follows from above)
-- OAuth token refresh on expiry
-- Logout button (clear app data via system settings to re-auth)
 - Lossless / AAC / Opus codecs — mp3 only
-- Resumable / WorkManager-backed downloads
-- Pagination of search and favorites results
-- Real-time like state from server (only refreshed when entering Favorites)
 
 ## Disclaimer
 

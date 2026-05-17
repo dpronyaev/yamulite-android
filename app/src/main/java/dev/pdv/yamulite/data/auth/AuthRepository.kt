@@ -81,6 +81,17 @@ class AuthRepository @Inject constructor(
         emit(AuthEvent.Failed("Время кода истекло"))
     }
 
+    suspend fun refreshToken(): Boolean {
+        val rt = tokenStore.getRefreshToken() ?: return false
+        return try {
+            val resp = api.refreshToken("refresh_token", rt, CLIENT_ID, CLIENT_SECRET)
+            if (!resp.isSuccessful) return false
+            val body = resp.body() ?: return false
+            tokenStore.saveToken(body.accessToken, body.refreshToken, body.expiresIn)
+            true
+        } catch (t: Throwable) { false }
+    }
+
     suspend fun logout() = tokenStore.clear()
 
     companion object {

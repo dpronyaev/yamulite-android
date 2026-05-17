@@ -1,6 +1,8 @@
 package dev.pdv.yamulite
 
 import android.app.Application
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -13,9 +15,13 @@ import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 @HiltAndroidApp
-class YaMuLiteApp : Application(), SingletonImageLoader.Factory {
+class YaMuLiteApp : Application(), SingletonImageLoader.Factory, Configuration.Provider {
 
     @Inject lateinit var okHttpClient: OkHttpClient
+    @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)

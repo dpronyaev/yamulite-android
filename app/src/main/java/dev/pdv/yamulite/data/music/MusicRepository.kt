@@ -4,6 +4,7 @@ import dev.pdv.yamulite.data.music.dto.AlbumDto
 import dev.pdv.yamulite.data.music.dto.AlbumWithTracksDto
 import dev.pdv.yamulite.data.music.dto.ArtistBriefDto
 import dev.pdv.yamulite.data.music.dto.ArtistDto
+import dev.pdv.yamulite.data.music.dto.LikedTrackRefDto
 import dev.pdv.yamulite.data.music.dto.TrackDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,9 +44,9 @@ class MusicRepository @Inject constructor(
         uid
     }
 
-    suspend fun search(text: String, type: SearchType): SearchResults {
+    suspend fun search(text: String, type: SearchType, page: Int = 0): SearchResults {
         if (text.isBlank()) return SearchResults()
-        val res = api.search(text, type.apiValue).result
+        val res = api.search(text, type.apiValue, page).result
         return SearchResults(
             tracks = res.tracks?.results.orEmpty(),
             artists = res.artists?.results.orEmpty(),
@@ -53,19 +54,26 @@ class MusicRepository @Inject constructor(
         )
     }
 
-    suspend fun favorites(): List<TrackDto> {
+    suspend fun likedTrackRefs(): List<LikedTrackRefDto> {
         val u = uid()
         val refs = api.likedTracks(u).result.library.tracks
-        if (refs.isEmpty()) {
-            _likedIds.value = emptySet()
-            return emptyList()
-        }
-        val ids = refs.joinToString(",") { it.id }
+        _likedIds.value = refs.map { it.id }.toSet()
+        return refs
+    }
+
+    suspend fun favoritesPage(refs: List<LikedTrackRefDto>, page: Int): List<TrackDto> {
+        val slice = refs.drop(page * FAVORITES_PAGE_SIZE).take(FAVORITES_PAGE_SIZE)
+        if (slice.isEmpty()) return emptyList()
+        val ids = slice.joinToString(",") { it.id }
         val full = api.tracksByIds(ids).result
         val byId = full.associateBy { it.id }
-        val ordered = refs.mapNotNull { byId[it.id] }
-        _likedIds.value = ordered.map { it.id }.toSet()
-        return ordered
+        return slice.mapNotNull { byId[it.id] }
+    }
+
+    suspend fun refreshLikedIds() {
+        val u = uid()
+        val refs = api.likedTracks(u).result.library.tracks
+        _likedIds.value = refs.map { it.id }.toSet()
     }
 
     suspend fun like(trackId: String): Result<Unit> = runCatching {
@@ -89,5 +97,10 @@ class MusicRepository @Inject constructor(
     fun resetSession() {
         cachedUid = null
         _likedIds.value = emptySet()
+    }
+
+    companion object {
+        const val FAVORITES_PAGE_SIZE = 50
+        const val SEARCH_PAGE_SIZE = 20
     }
 }

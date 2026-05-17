@@ -105,11 +105,6 @@ Yandex DTO surprises are the most common source of bugs. When adding endpoints o
 ## Out of scope (intentionally not implemented)
 
 - Background playback / `MediaSessionService` / media notification.
-- Token refresh on expiry.
-- Logout button (clear app data via system settings to re-auth).
 - Lossless / aac / opus codecs.
-- Seek bar / position display.
-- Resumable downloads.
-- Pagination of search / favorites results.
 
 See `REPORT.md` § 5 for the complete list. Don't add these without explicit user request.
