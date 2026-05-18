@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,6 +42,7 @@ data class PlaybackUi(
 @Singleton
 class AudioPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val queueStore: QueueStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -61,6 +63,7 @@ class AudioPlayer @Inject constructor(
             runCatching { future.get() }.onSuccess { ctrl ->
                 ctrl.addListener(makeListener(ctrl))
                 _controllerReady.complete(ctrl)
+                restoreQueueIfNeeded(ctrl)
             }.onFailure {
                 _controllerReady.completeExceptionally(it)
             }
@@ -116,11 +119,30 @@ class AudioPlayer @Inject constructor(
             error = null,
         )
         scope.launch {
+            withContext(Dispatchers.IO) { queueStore.save(tracks) }
             val c = _controllerReady.await()
             val items = tracks.map { it.toMediaItem() }
             c.setMediaItems(items, safeIndex, C.TIME_UNSET)
             c.prepare()
             c.play()
+        }
+    }
+
+    private fun restoreQueueIfNeeded(ctrl: MediaController) {
+        scope.launch {
+            if (ctrl.mediaItemCount == 0) return@launch
+            val saved = withContext(Dispatchers.IO) { queueStore.load() }
+            if (saved.isEmpty()) return@launch
+            queue = saved
+            val currentId = ctrl.currentMediaItem?.mediaId
+            val track = saved.firstOrNull { it.id == currentId } ?: return@launch
+            _state.value = _state.value.copy(
+                track = track,
+                isPlaying = ctrl.isPlaying,
+                hasNext = ctrl.hasNextMediaItem(),
+                hasPrevious = ctrl.hasPreviousMediaItem(),
+            )
+            if (ctrl.isPlaying) startPositionUpdates()
         }
     }
 
@@ -155,6 +177,7 @@ class AudioPlayer @Inject constructor(
 
     fun stop() {
         scope.launch {
+            withContext(Dispatchers.IO) { queueStore.clear() }
             val c = _controllerReady.await()
             c.stop()
             c.clearMediaItems()

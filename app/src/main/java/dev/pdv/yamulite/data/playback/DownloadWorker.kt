@@ -8,7 +8,6 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dev.pdv.yamulite.data.music.StreamUrlResolver
-import dev.pdv.yamulite.data.settings.CodecPreference
 import dev.pdv.yamulite.data.settings.SettingsStore
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -27,16 +26,18 @@ class DownloadWorker @AssistedInject constructor(
         val trackId = inputData.getString(KEY_TRACK_ID) ?: return Result.failure()
         val baseDir = File(applicationContext.filesDir, "tracks").also { it.mkdirs() }
         val safeName = trackId.replace(":", "_")
-        val dest = File(baseDir, "$safeName.mp3")
-        val tmp = File(baseDir, "$safeName.mp3.part")
+
+        val q = settings.currentQuality()
+        val c = settings.currentCodec()
+        val resolved = resolver.resolve(trackId, q.bitrate, c)
+            ?: return Result.failure(workDataOf(KEY_ERROR to "Не удалось получить ссылку"))
+
+        val ext = resolved.codec.toFileExtension()
+        val dest = File(baseDir, "$safeName.$ext")
+        val tmp = File(baseDir, "$safeName.$ext.part")
 
         return try {
-            val q = settings.currentQuality()
-            // Downloads are always mp3 — DownloadManager is hardcoded to .mp3 extension
-            val url = resolver.resolve(trackId, q.bitrate, CodecPreference.Mp3Only)
-                ?: return Result.failure(workDataOf(KEY_ERROR to "Не удалось получить ссылку"))
-
-            okHttp.newCall(Request.Builder().url(url).build()).execute().use { resp ->
+            okHttp.newCall(Request.Builder().url(resolved.url).build()).execute().use { resp ->
                 val body = resp.body ?: error("Пустой ответ сервера")
                 val total = body.contentLength()
                 body.byteStream().use { input ->
@@ -72,4 +73,10 @@ class DownloadWorker @AssistedInject constructor(
         const val KEY_LOCAL_PATH = "localPath"
         const val KEY_ERROR = "error"
     }
+}
+
+private fun String.toFileExtension() = when (lowercase()) {
+    "flac" -> "flac"
+    "aac", "aac-v3" -> "aac"
+    else -> "mp3"
 }

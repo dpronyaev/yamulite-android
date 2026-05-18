@@ -48,10 +48,7 @@ class DownloadManager @Inject constructor(
             .launchIn(scope)
     }
 
-    fun localPath(trackId: String): String? {
-        val f = fileFor(trackId)
-        return if (f.exists()) f.absolutePath else null
-    }
+    fun localPath(trackId: String): String? = existingFile(trackId)?.absolutePath
 
     fun download(trackId: String) {
         val current = _downloads.value[trackId]?.state
@@ -70,8 +67,10 @@ class DownloadManager @Inject constructor(
 
     fun delete(trackId: String) {
         workManager.cancelUniqueWork("download_${safeName(trackId)}")
-        fileFor(trackId).delete()
-        File(baseDir, "${safeName(trackId)}.mp3.part").delete()
+        existingFile(trackId)?.delete()
+        AUDIO_EXTENSIONS.forEach { ext ->
+            File(baseDir, "${safeName(trackId)}.$ext.part").delete()
+        }
         _downloads.update { it - trackId }
     }
 
@@ -97,10 +96,9 @@ class DownloadManager @Inject constructor(
                     }
                     WorkInfo.State.SUCCEEDED -> {
                         if (merged[trackId]?.state != DownloadState.Done) {
-                            val file = fileFor(trackId)
                             merged[trackId] = DownloadInfo(
                                 DownloadState.Done, 1f,
-                                file.absolutePath.takeIf { file.exists() },
+                                existingFile(trackId)?.absolutePath,
                             )
                         }
                     }
@@ -121,13 +119,17 @@ class DownloadManager @Inject constructor(
         }
     }
 
-    private fun fileFor(trackId: String) = File(baseDir, "${safeName(trackId)}.mp3")
+    private fun existingFile(trackId: String): File? {
+        val safe = safeName(trackId)
+        return AUDIO_EXTENSIONS.map { ext -> File(baseDir, "$safe.$ext") }.firstOrNull { it.exists() }
+    }
+
     private fun safeName(id: String) = id.replace(":", "_")
 
     private fun scanLocal(): Map<String, DownloadInfo> {
         if (!baseDir.exists()) return emptyMap()
         return baseDir.listFiles().orEmpty()
-            .filter { it.isFile && it.extension == "mp3" }
+            .filter { it.isFile && it.extension in AUDIO_EXTENSIONS }
             .associate { f ->
                 val id = f.nameWithoutExtension.replace("_", ":")
                 id to DownloadInfo(DownloadState.Done, 1f, f.absolutePath)
@@ -137,5 +139,6 @@ class DownloadManager @Inject constructor(
     companion object {
         private const val TAG_DOWNLOAD = "download"
         private const val TAG_TRACK_PREFIX = "track_"
+        private val AUDIO_EXTENSIONS = listOf("flac", "aac", "mp3")
     }
 }

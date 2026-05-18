@@ -13,6 +13,7 @@ class PlaybackService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
 
+    @Suppress("DEPRECATION")
     override fun onCreate() {
         super.onCreate()
         val player = ExoPlayer.Builder(this)
@@ -20,7 +21,9 @@ class PlaybackService : MediaSessionService() {
                 androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
             )
             .build()
-        mediaSession = MediaSession.Builder(this, player).build()
+        mediaSession = MediaSession.Builder(this, player)
+            .setBitmapLoader(CoilBitmapLoader(this))
+            .build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession

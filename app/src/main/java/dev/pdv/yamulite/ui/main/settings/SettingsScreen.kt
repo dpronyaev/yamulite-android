@@ -1,6 +1,8 @@
 package dev.pdv.yamulite.ui.main.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,7 +54,7 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(
             "Качество музыки",
             style = MaterialTheme.typography.titleMedium,

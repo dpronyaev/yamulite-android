@@ -9,6 +9,8 @@ import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class ResolvedStream(val url: String, val codec: String)
+
 @Singleton
 class StreamUrlResolver @Inject constructor(
     private val api: MusicApi,
@@ -18,7 +20,7 @@ class StreamUrlResolver @Inject constructor(
         trackId: String,
         preferredBitrate: Int,
         codecPref: CodecPreference = CodecPreference.Unrestricted,
-    ): String? = withContext(Dispatchers.IO) {
+    ): ResolvedStream? = withContext(Dispatchers.IO) {
         val options = api.downloadInfo(trackId).result
 
         val allowed = when (codecPref) {
@@ -48,7 +50,7 @@ class StreamUrlResolver @Inject constructor(
             .execute()
             .use { it.body?.string().orEmpty() }
         val info = parseInfoXml(xml) ?: return@withContext null
-        signedUrl(pick.codec, info)
+        ResolvedStream(url = signedUrl(pick.codec, info), codec = pick.codec.lowercase())
     }
 
     private data class InfoFields(val host: String, val path: String, val ts: String, val s: String)

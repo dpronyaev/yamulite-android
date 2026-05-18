@@ -78,10 +78,7 @@ The debug APK is ~21 MB. First build takes about a minute (downloading dependenc
 
 ## Limitations
 
-- **Downloads are always MP3.** The codec preference (Settings → Кодек) applies to streaming only. `DownloadManager` stores files with a `.mp3` extension, so downloads are forced to MP3 regardless of the selected codec.
-- **FLAC stream URL prefix is unverified.** The resolver constructs `get-flac/…` URLs by analogy with the community-documented `get-mp3/get-aac` prefixes, but this has not been confirmed against a live Yandex Music account with a FLAC-entitled subscription.
-- **No album art in the media notification.** `DefaultMediaNotificationProvider` does not load remote HTTP artwork URIs out of the box; a custom `BitmapLoader` is required.
-- **Queue is in-memory only.** If the OS kills the process while the service is playing in the background, the `AudioPlayer` queue (list of `TrackDto`) is lost. The service's `ExoPlayer` retains its position, but the app cannot resolve track metadata (title, artist) after restart until the user re-opens a playlist.
+- **FLAC subscription required for FLAC streams.** The resolver constructs `get-flac/…` URLs by analogy with the community-documented `get-mp3/get-aac` prefixes. If the URL is unreachable (e.g. no FLAC-entitled subscription), the player automatically retries with MP3. Downloads follow the same codec preference and use the correct extension (`.mp3`, `.aac`, `.flac`).
 
 ## Disclaimer
 

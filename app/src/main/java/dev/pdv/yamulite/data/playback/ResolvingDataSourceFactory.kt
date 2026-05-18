@@ -8,6 +8,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
 import dev.pdv.yamulite.data.music.StreamUrlResolver
+import dev.pdv.yamulite.data.settings.CodecPreference
 import dev.pdv.yamulite.data.settings.SettingsStore
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -50,7 +51,12 @@ class ResolvingDataSourceFactory @Inject constructor(
             } else {
                 val q = runBlocking { settings.currentQuality() }
                 val c = runBlocking { settings.currentCodec() }
-                val url = runBlocking { resolver.resolve(trackId, q.bitrate, c) }
+                val resolved = runBlocking { resolver.resolve(trackId, q.bitrate, c) }
+                    // If preferred codec failed and it wasn't already mp3, retry with mp3
+                    ?: if (c != CodecPreference.Mp3Only)
+                        runBlocking { resolver.resolve(trackId, q.bitrate, CodecPreference.Mp3Only) }
+                    else null
+                val url = resolved?.url
                     ?: throw IOException("Could not resolve stream URL for track $trackId")
                 Uri.parse(url)
             }
