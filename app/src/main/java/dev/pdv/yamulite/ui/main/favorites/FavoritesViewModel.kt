@@ -1,5 +1,6 @@
 package dev.pdv.yamulite.ui.main.favorites
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,9 +13,11 @@ import dev.pdv.yamulite.data.playback.DownloadState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Immutable
 data class FavoritesUiState(
     val loading: Boolean = false,
     val tracks: List<TrackDto> = emptyList(),
@@ -53,7 +56,7 @@ class FavoritesViewModel @Inject constructor(
     }
 
     fun refresh() = viewModelScope.launch {
-        _state.value = _state.value.copy(loading = true, error = null)
+        _state.update { it.copy(loading = true, error = null) }
         runCatching {
             allRefs = repo.likedTrackRefs()
             loadedPage = -1
@@ -75,19 +78,21 @@ class FavoritesViewModel @Inject constructor(
     fun loadMore() {
         if (_state.value.loadingMore || !_state.value.hasMore) return
         viewModelScope.launch {
-            _state.value = _state.value.copy(loadingMore = true)
+            _state.update { it.copy(loadingMore = true) }
             val nextPage = loadedPage + 1
             runCatching { repo.favoritesPage(allRefs, nextPage) }
                 .onSuccess { newTracks ->
                     loadedPage = nextPage
-                    _state.value = _state.value.copy(
-                        tracks = _state.value.tracks + newTracks,
-                        loadingMore = false,
-                        hasMore = (nextPage + 1) * MusicRepository.FAVORITES_PAGE_SIZE < allRefs.size,
-                    )
+                    _state.update { s ->
+                        s.copy(
+                            tracks = s.tracks + newTracks,
+                            loadingMore = false,
+                            hasMore = (nextPage + 1) * MusicRepository.FAVORITES_PAGE_SIZE < allRefs.size,
+                        )
+                    }
                 }
                 .onFailure {
-                    _state.value = _state.value.copy(loadingMore = false)
+                    _state.update { it.copy(loadingMore = false) }
                 }
         }
     }
@@ -98,13 +103,13 @@ class FavoritesViewModel @Inject constructor(
 
     fun toggleLike(trackId: String) = viewModelScope.launch {
         val result = if (trackId in repo.likedIds.value) repo.unlike(trackId) else repo.like(trackId)
-        result.onFailure {
-            _state.value = _state.value.copy(likeError = it.message ?: "Ошибка при изменении лайка")
+        result.onFailure { ex ->
+            _state.update { it.copy(likeError = ex.message ?: "Ошибка при изменении лайка") }
         }
         refresh()
     }
 
     fun clearLikeError() {
-        _state.value = _state.value.copy(likeError = null)
+        _state.update { it.copy(likeError = null) }
     }
 }

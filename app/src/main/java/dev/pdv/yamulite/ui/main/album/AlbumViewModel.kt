@@ -3,6 +3,7 @@ package dev.pdv.yamulite.ui.main.album
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.runtime.Immutable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.pdv.yamulite.data.music.MusicRepository
 import dev.pdv.yamulite.data.music.dto.TrackDto
@@ -12,9 +13,11 @@ import dev.pdv.yamulite.data.playback.DownloadState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Immutable
 data class AlbumUiState(
     val loading: Boolean = false,
     val title: String = "",
@@ -46,7 +49,7 @@ class AlbumViewModel @Inject constructor(
     }
 
     fun refresh() = viewModelScope.launch {
-        _state.value = _state.value.copy(loading = true, error = null)
+        _state.update { it.copy(loading = true, error = null) }
         runCatching { repo.album(albumId) }
             .onSuccess { dto ->
                 _state.value = AlbumUiState(

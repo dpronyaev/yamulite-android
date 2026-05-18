@@ -13,6 +13,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.pdv.yamulite.data.music.dto.TrackDto
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@Immutable
 data class PlaybackUi(
     val track: TrackDto? = null,
     val isPlaying: Boolean = false,
@@ -189,8 +191,8 @@ class AudioPlayer @Inject constructor(
     private fun startPositionUpdates() {
         if (positionJob?.isActive == true) return
         positionJob = scope.launch {
+            val c = _controllerReady.await()
             while (isActive) {
-                val c = _controllerReady.await()
                 syncPositionAndDuration(c)
                 delay(500)
             }

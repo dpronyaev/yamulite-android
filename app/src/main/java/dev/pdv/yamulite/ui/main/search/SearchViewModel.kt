@@ -1,5 +1,6 @@
 package dev.pdv.yamulite.ui.main.search
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,9 +20,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Immutable
 data class SearchUiState(
     val query: String = "",
     val type: SearchType = SearchType.Tracks,
@@ -70,25 +73,25 @@ class SearchViewModel @Inject constructor(
     }
 
     fun onQueryChange(text: String) {
-        _state.value = _state.value.copy(query = text)
+        _state.update { it.copy(query = text) }
         queryFlow.value = text.trim()
     }
 
     fun onTypeChange(type: SearchType) {
         if (_state.value.type == type) return
-        _state.value = _state.value.copy(type = type)
+        _state.update { it.copy(type = type) }
         runSearch()
     }
 
     fun toggleLike(trackId: String) = viewModelScope.launch {
         val result = if (trackId in repo.likedIds.value) repo.unlike(trackId) else repo.like(trackId)
-        result.onFailure {
-            _state.value = _state.value.copy(likeError = it.message ?: "Ошибка при изменении лайка")
+        result.onFailure { ex ->
+            _state.update { it.copy(likeError = ex.message ?: "Ошибка при изменении лайка") }
         }
     }
 
     fun clearLikeError() {
-        _state.value = _state.value.copy(likeError = null)
+        _state.update { it.copy(likeError = null) }
     }
 
     fun loadMore() {
@@ -96,24 +99,26 @@ class SearchViewModel @Inject constructor(
         val q = _state.value.query.trim()
         val type = _state.value.type
         if (q.isBlank()) return
-        _state.value = _state.value.copy(loadingMore = true)
+        _state.update { it.copy(loadingMore = true) }
         val nextPage = searchPage + 1
         viewModelScope.launch {
             runCatching { repo.search(q, type, nextPage) }
                 .onSuccess { newResults ->
                     searchPage = nextPage
-                    _state.value = _state.value.copy(
-                        loadingMore = false,
-                        hasMore = hasMoreResults(newResults, type),
-                        results = SearchResults(
-                            tracks = _state.value.results.tracks + newResults.tracks,
-                            artists = _state.value.results.artists + newResults.artists,
-                            albums = _state.value.results.albums + newResults.albums,
-                        ),
-                    )
+                    _state.update { s ->
+                        s.copy(
+                            loadingMore = false,
+                            hasMore = hasMoreResults(newResults, type),
+                            results = SearchResults(
+                                tracks = s.results.tracks + newResults.tracks,
+                                artists = s.results.artists + newResults.artists,
+                                albums = s.results.albums + newResults.albums,
+                            ),
+                        )
+                    }
                 }
                 .onFailure {
-                    _state.value = _state.value.copy(loadingMore = false)
+                    _state.update { it.copy(loadingMore = false) }
                 }
         }
     }
@@ -123,29 +128,27 @@ class SearchViewModel @Inject constructor(
         val type = _state.value.type
         inflightJob?.cancel()
         if (q.isBlank()) {
-            _state.value = _state.value.copy(
-                loading = false, results = SearchResults(), error = null, hasMore = false
-            )
+            _state.update { it.copy(loading = false, results = SearchResults(), error = null, hasMore = false) }
             return
         }
         searchPage = 0
-        _state.value = _state.value.copy(loading = true, error = null)
+        _state.update { it.copy(loading = true, error = null) }
         inflightJob = viewModelScope.launch {
             runCatching { repo.search(q, type, 0) }
                 .onSuccess { results ->
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         loading = false,
                         results = results,
                         error = null,
                         hasMore = hasMoreResults(results, type),
-                    )
+                    ) }
                 }
-                .onFailure {
-                    _state.value = _state.value.copy(
+                .onFailure { ex ->
+                    _state.update { it.copy(
                         loading = false,
-                        error = it.message ?: "Ошибка поиска",
+                        error = ex.message ?: "Ошибка поиска",
                         hasMore = false,
-                    )
+                    ) }
                 }
         }
     }
