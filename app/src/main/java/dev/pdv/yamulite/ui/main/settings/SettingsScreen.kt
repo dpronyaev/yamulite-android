@@ -31,11 +31,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pdv.yamulite.data.settings.CodecPreference
 import dev.pdv.yamulite.data.settings.Quality
+import dev.pdv.yamulite.data.settings.ThemePreference
 
 @Composable
 fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
     val current by vm.quality.collectAsStateWithLifecycle()
     val currentCodec by vm.codec.collectAsStateWithLifecycle()
+    val currentTheme by vm.theme.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
@@ -99,6 +101,25 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "Тема оформления",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Spacer(Modifier.height(8.dp))
+        ThemePreference.entries.forEach { t ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { vm.setTheme(t) }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                RadioButton(selected = currentTheme == t, onClick = { vm.setTheme(t) })
+                Text(t.label, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
         Spacer(Modifier.height(24.dp))
         HorizontalDivider()
         Spacer(Modifier.height(16.dp))

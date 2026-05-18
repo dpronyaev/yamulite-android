@@ -8,6 +8,7 @@ import dev.pdv.yamulite.data.music.MusicRepository
 import dev.pdv.yamulite.data.settings.CodecPreference
 import dev.pdv.yamulite.data.settings.Quality
 import dev.pdv.yamulite.data.settings.SettingsStore
+import dev.pdv.yamulite.data.settings.ThemePreference
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,9 +22,11 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
     val quality = store.quality.stateIn(viewModelScope, SharingStarted.Eagerly, Quality.High)
     val codec = store.codec.stateIn(viewModelScope, SharingStarted.Eagerly, CodecPreference.AacPreferred)
+    val theme = store.theme.stateIn(viewModelScope, SharingStarted.Eagerly, ThemePreference.System)
 
     fun setQuality(q: Quality) = viewModelScope.launch { store.setQuality(q) }
     fun setCodec(c: CodecPreference) = viewModelScope.launch { store.setCodec(c) }
+    fun setTheme(t: ThemePreference) = viewModelScope.launch { store.setTheme(t) }
 
     fun logout() = viewModelScope.launch {
         musicRepo.resetSession()
