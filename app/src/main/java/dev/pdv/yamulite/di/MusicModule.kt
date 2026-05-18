@@ -1,18 +1,24 @@
 package dev.pdv.yamulite.di
 
+import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.pdv.yamulite.BuildConfig
 import dev.pdv.yamulite.data.music.AuthInterceptor
 import dev.pdv.yamulite.data.music.MusicApi
 import dev.pdv.yamulite.data.music.TokenRefreshAuthenticator
 import kotlinx.serialization.json.Json
+import okhttp3.Cache
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.io.File
+import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -30,11 +36,20 @@ object MusicModule {
         json: Json,
         authInterceptor: AuthInterceptor,
         tokenRefreshAuthenticator: TokenRefreshAuthenticator,
+        @ApplicationContext context: Context,
     ): Retrofit {
         val client = OkHttpClient.Builder()
+            .cache(Cache(File(context.cacheDir, "http_music_cache"), 20L * 1024 * 1024))
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .authenticator(tokenRefreshAuthenticator)
-            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
+                }
+            }
             .build()
         return Retrofit.Builder()
             .baseUrl("https://api.music.yandex.net/")

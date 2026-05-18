@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.flow.update
 import java.io.File
 import javax.inject.Inject
@@ -24,6 +25,7 @@ import javax.inject.Singleton
 
 enum class DownloadState { Downloading, Done, Failed }
 
+@Immutable
 data class DownloadInfo(
     val state: DownloadState,
     val progress: Float = 0f,

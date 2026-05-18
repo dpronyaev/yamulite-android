@@ -71,10 +71,15 @@ fun SearchScreen(
         if (shouldLoadMore && state.hasMore && !state.loadingMore) vm.loadMore()
     }
 
+    val onQueryChange: (String) -> Unit = remember(vm) { vm::onQueryChange }
+    val onToggleLike: (String) -> Unit = remember(vm) { { vm.toggleLike(it) } }
+    val onPlay: (List<TrackDto>, Int) -> Unit = remember(vm) { vm::play }
+    val onDownloadClickFn: (String) -> Unit = remember(vm) { vm::onDownloadClick }
+
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = state.query,
-            onValueChange = vm::onQueryChange,
+            onValueChange = onQueryChange,
             placeholder = { Text("Поиск") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
@@ -117,7 +122,7 @@ fun SearchScreen(
                 )
                 else -> Results(
                     state, likedIds, downloadStates, lazyListState,
-                    vm::toggleLike, vm::play, vm::onDownloadClick, onArtistClick, onAlbumClick,
+                    onToggleLike, onPlay, onDownloadClickFn, onArtistClick, onAlbumClick,
                 )
             }
             SnackbarHost(

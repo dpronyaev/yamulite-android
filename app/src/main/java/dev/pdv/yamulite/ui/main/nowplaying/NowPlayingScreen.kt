@@ -114,8 +114,9 @@ private fun TrackDetails(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = modifier,
     ) {
+        val displayText = remember(track.id, track.title, track.artists) { track.displayLine() }
         Text(
-            text = track.displayLine(),
+            text = displayText,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
