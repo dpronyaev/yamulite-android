@@ -51,6 +51,14 @@ An unofficial Android client for Yandex Music, written in Kotlin with Jetpack Co
 
 > Kotlin is intentionally pinned to **2.0.21** — Hilt 2.52's metadata reader cannot parse Kotlin 2.1 metadata. Bump Hilt first if you want Kotlin 2.1.
 
+## Download
+
+A pre-built debug APK is available in [`latest/yamulite.apk`](latest/yamulite.apk).
+
+```bash
+adb install -r latest/yamulite.apk
+```
+
 ## Build & install
 
 The Gradle build needs JDK 17:
