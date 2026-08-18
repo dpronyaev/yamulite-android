@@ -1,5 +1,6 @@
 package dev.pdv.yamulite.data.music.dto
 
+import androidx.compose.runtime.Immutable
 import dev.pdv.yamulite.data.network.FlexibleStringSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,6 +24,7 @@ data class SearchDto(
 @Serializable
 data class SearchSectionDto<T>(val results: List<T> = emptyList())
 
+@Immutable
 @Serializable
 data class TrackDto(
     @Serializable(with = FlexibleStringSerializer::class) val id: String,
@@ -34,12 +36,14 @@ data class TrackDto(
     val available: Boolean? = null,
 )
 
+@Immutable
 @Serializable
 data class ArtistShortDto(
     val id: Long = 0,
     val name: String = "",
 )
 
+@Immutable
 @Serializable
 data class AlbumShortDto(
     val id: Long = 0,
@@ -47,6 +51,7 @@ data class AlbumShortDto(
     val coverUri: String? = null,
 )
 
+@Immutable
 @Serializable
 data class ArtistDto(
     val id: Long = 0,
@@ -55,6 +60,7 @@ data class ArtistDto(
     val ogImage: String? = null,
 )
 
+@Immutable
 @Serializable
 data class AlbumDto(
     val id: Long = 0,
@@ -64,6 +70,7 @@ data class AlbumDto(
     val year: Int? = null,
 )
 
+@Immutable
 @Serializable
 data class CoverDto(val uri: String? = null, val type: String? = null)
 

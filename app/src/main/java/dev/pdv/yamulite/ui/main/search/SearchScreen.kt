@@ -24,6 +24,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -40,6 +41,8 @@ import dev.pdv.yamulite.data.music.dto.TrackDto
 import dev.pdv.yamulite.ui.main.components.AlbumRow
 import dev.pdv.yamulite.ui.main.components.ArtistRow
 import dev.pdv.yamulite.ui.main.components.TrackRow
+import dev.pdv.yamulite.ui.main.components.rememberDownloadInfo
+import dev.pdv.yamulite.ui.main.components.rememberIsLiked
 
 @Composable
 fun SearchScreen(
@@ -48,8 +51,8 @@ fun SearchScreen(
     vm: SearchViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val likedIds by vm.likedIds.collectAsStateWithLifecycle()
-    val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
+    val likedIds = vm.likedIds.collectAsStateWithLifecycle()
+    val downloadStates = vm.downloadStates.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val lazyListState = rememberLazyListState()
 
@@ -136,8 +139,8 @@ fun SearchScreen(
 @Composable
 private fun Results(
     state: SearchUiState,
-    likedIds: Set<String>,
-    downloadStates: Map<String, DownloadInfo>,
+    likedIds: State<Set<String>>,
+    downloadStates: State<Map<String, DownloadInfo>>,
     lazyListState: LazyListState,
     onToggleLike: (String) -> Unit,
     onPlay: (List<TrackDto>, Int) -> Unit,
@@ -151,8 +154,8 @@ private fun Results(
                 itemsIndexed(state.results.tracks, key = { _, t -> t.id }) { idx, track ->
                     TrackRow(
                         track = track,
-                        isLiked = track.id in likedIds,
-                        download = downloadStates[track.id],
+                        isLiked = rememberIsLiked(track.id, likedIds),
+                        download = rememberDownloadInfo(track.id, downloadStates),
                         onClick = { onPlay(state.results.tracks, idx) },
                         onLikeToggle = { onToggleLike(track.id) },
                         onDownloadClick = { onDownloadClick(track.id) },

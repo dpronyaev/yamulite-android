@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,8 +47,10 @@ fun AlbumRow(album: AlbumDto, onClick: () -> Unit = {}) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         CoverImage(coverUri = album.coverUri)
-        val artist = album.artists.joinToString(", ") { it.name }
-        val line = if (artist.isBlank()) album.title else "$artist — ${album.title}"
+        val line = remember(album.id, album.title, album.artists) {
+            val artist = album.artists.joinToString(", ") { it.name }
+            if (artist.isBlank()) album.title else "$artist — ${album.title}"
+        }
         Text(
             line,
             modifier = Modifier.weight(1f),

@@ -98,7 +98,17 @@ class FavoritesViewModel @Inject constructor(
     }
 
     fun syncLikes() = viewModelScope.launch {
+        // refreshLikedIds() alone only updates the liked-id set (for heart icons elsewhere);
+        // a track liked from another screen won't show up in this list until a full refresh.
+        // Compare against allRefs (the full liked-id set as of the last refresh), not a
+        // before/after snapshot of repo.likedIds — that flow is updated optimistically by
+        // like()/unlike() the moment they're called from ANY screen, so by the time this
+        // runs it may already reflect the very change we're trying to detect.
         runCatching { repo.refreshLikedIds() }
+            .onSuccess {
+                val known = allRefs.mapTo(mutableSetOf()) { it.id }
+                if (repo.likedIds.value != known) refresh()
+            }
     }
 
     fun toggleLike(trackId: String) = viewModelScope.launch {

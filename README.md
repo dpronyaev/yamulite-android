@@ -44,8 +44,8 @@ An unofficial Android client for Yandex Music, written in Kotlin with Jetpack Co
 | DI | Hilt 2.52 (via KSP 2.0.21-1.0.28) |
 | Navigation | Navigation Compose 2.8.5 |
 | Networking | Retrofit 2.11.0, OkHttp 4.12.0, kotlinx.serialization 1.7.3 |
-| Images | Coil 3.0.4 |
-| Playback | Media3 ExoPlayer 1.5.1 |
+| Images | Coil 3.2.0 |
+| Playback | Media3 ExoPlayer 1.10.1 |
 | Storage | DataStore Preferences 1.1.1 |
 
 `compileSdk = 36`, `targetSdk = 36`, `minSdk = 26` (Android 8+).

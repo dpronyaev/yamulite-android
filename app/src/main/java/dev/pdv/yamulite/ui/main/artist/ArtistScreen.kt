@@ -28,6 +28,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pdv.yamulite.ui.main.components.AlbumRow
 import dev.pdv.yamulite.ui.main.components.TrackRow
+import dev.pdv.yamulite.ui.main.components.rememberDownloadInfo
+import dev.pdv.yamulite.ui.main.components.rememberIsLiked
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,8 +39,8 @@ fun ArtistScreen(
     vm: ArtistViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val likedIds by vm.likedIds.collectAsStateWithLifecycle()
-    val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
+    val likedIds = vm.likedIds.collectAsStateWithLifecycle()
+    val downloadStates = vm.downloadStates.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -70,8 +72,8 @@ fun ArtistScreen(
                         itemsIndexed(state.popularTracks, key = { _, t -> "t-${t.id}" }) { idx, track ->
                             TrackRow(
                                 track = track,
-                                isLiked = track.id in likedIds,
-                                download = downloadStates[track.id],
+                                isLiked = rememberIsLiked(track.id, likedIds),
+                                download = rememberDownloadInfo(track.id, downloadStates),
                                 onClick = { vm.play(state.popularTracks, idx) },
                                 onLikeToggle = { vm.toggleLike(track.id) },
                                 onDownloadClick = { vm.onDownloadClick(track.id) },

@@ -32,16 +32,19 @@ class MusicRepository @Inject constructor(
     private val api: MusicApi,
 ) {
     private val uidMutex = Mutex()
-    private var cachedUid: Long? = null
+    @Volatile private var cachedUid: Long? = null
 
     private val _likedIds = MutableStateFlow<Set<String>>(emptySet())
     val likedIds: StateFlow<Set<String>> = _likedIds.asStateFlow()
 
-    suspend fun uid(): Long = uidMutex.withLock {
-        cachedUid?.let { return@withLock it }
-        val uid = api.accountStatus().result.account.uid
-        cachedUid = uid
-        uid
+    suspend fun uid(): Long {
+        cachedUid?.let { return it }
+        return uidMutex.withLock {
+            cachedUid?.let { return@withLock it }
+            val uid = api.accountStatus().result.account.uid
+            cachedUid = uid
+            uid
+        }
     }
 
     suspend fun search(text: String, type: SearchType, page: Int = 0): SearchResults {

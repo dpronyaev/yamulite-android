@@ -12,6 +12,8 @@ import dev.pdv.yamulite.data.music.MusicApi
 import dev.pdv.yamulite.data.music.TokenRefreshAuthenticator
 import kotlinx.serialization.json.Json
 import okhttp3.Cache
+import okhttp3.ConnectionPool
+import okhttp3.Dispatcher
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -37,9 +39,13 @@ object MusicModule {
         authInterceptor: AuthInterceptor,
         tokenRefreshAuthenticator: TokenRefreshAuthenticator,
         @ApplicationContext context: Context,
+        connectionPool: ConnectionPool,
+        dispatcher: Dispatcher,
     ): Retrofit {
         val client = OkHttpClient.Builder()
             .cache(Cache(File(context.cacheDir, "http_music_cache"), 20L * 1024 * 1024))
+            .connectionPool(connectionPool)
+            .dispatcher(dispatcher)
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)

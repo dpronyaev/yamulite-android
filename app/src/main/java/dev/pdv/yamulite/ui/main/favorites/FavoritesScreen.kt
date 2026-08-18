@@ -27,12 +27,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pdv.yamulite.ui.main.components.TrackRow
+import dev.pdv.yamulite.ui.main.components.rememberDownloadInfo
+import dev.pdv.yamulite.ui.main.components.rememberIsLiked
 
 @Composable
 fun FavoritesScreen(vm: FavoritesViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val likedIds by vm.likedIds.collectAsStateWithLifecycle()
-    val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
+    val likedIds = vm.likedIds.collectAsStateWithLifecycle()
+    val downloadStates = vm.downloadStates.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val lazyListState = rememberLazyListState()
 
@@ -77,8 +79,8 @@ fun FavoritesScreen(vm: FavoritesViewModel = hiltViewModel()) {
                 itemsIndexed(state.tracks, key = { _, t -> t.id }) { idx, track ->
                     TrackRow(
                         track = track,
-                        isLiked = track.id in likedIds,
-                        download = downloadStates[track.id],
+                        isLiked = rememberIsLiked(track.id, likedIds),
+                        download = rememberDownloadInfo(track.id, downloadStates),
                         onClick = { vm.play(state.tracks, idx) },
                         onLikeToggle = { vm.toggleLike(track.id) },
                         onDownloadClick = { vm.onDownloadClick(track.id) },

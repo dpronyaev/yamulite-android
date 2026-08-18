@@ -10,6 +10,8 @@ import dev.pdv.yamulite.BuildConfig
 import dev.pdv.yamulite.data.auth.AuthApi
 import kotlinx.serialization.json.Json
 import okhttp3.Cache
+import okhttp3.ConnectionPool
+import okhttp3.Dispatcher
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -35,9 +37,23 @@ object NetworkModule {
         explicitNulls = false
     }
 
+    // Shared across the auth and music OkHttpClient instances so both API calls and Coil's
+    // image fetches reuse one connection pool and one dispatcher thread pool instead of two.
     @Provides @Singleton
-    fun provideOkHttp(@ApplicationContext context: Context): OkHttpClient = OkHttpClient.Builder()
+    fun provideConnectionPool(): ConnectionPool = ConnectionPool()
+
+    @Provides @Singleton
+    fun provideOkHttpDispatcher(): Dispatcher = Dispatcher()
+
+    @Provides @Singleton
+    fun provideOkHttp(
+        @ApplicationContext context: Context,
+        connectionPool: ConnectionPool,
+        dispatcher: Dispatcher,
+    ): OkHttpClient = OkHttpClient.Builder()
         .cache(Cache(File(context.cacheDir, "http_auth_cache"), 4L * 1024 * 1024))
+        .connectionPool(connectionPool)
+        .dispatcher(dispatcher)
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(15, TimeUnit.SECONDS)

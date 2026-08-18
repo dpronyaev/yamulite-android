@@ -44,13 +44,21 @@ class DownloadWorker @AssistedInject constructor(
                     tmp.outputStream().use { output ->
                         val buf = ByteArray(64 * 1024)
                         var soFar = 0L
+                        var lastReportAt = 0L
                         while (true) {
                             val n = input.read(buf)
                             if (n == -1) break
                             output.write(buf, 0, n)
                             soFar += n
                             if (total > 0) {
-                                setProgress(workDataOf(KEY_PROGRESS to (soFar.toFloat() / total).coerceIn(0f, 1f)))
+                                // Throttled to a few updates/sec — a progress bar can't show
+                                // the difference between this and per-chunk updates anyway,
+                                // but each update triggers a WorkInfo emission app-wide.
+                                val now = System.currentTimeMillis()
+                                if (now - lastReportAt >= 200) {
+                                    lastReportAt = now
+                                    setProgress(workDataOf(KEY_PROGRESS to (soFar.toFloat() / total).coerceIn(0f, 1f)))
+                                }
                             }
                         }
                     }
