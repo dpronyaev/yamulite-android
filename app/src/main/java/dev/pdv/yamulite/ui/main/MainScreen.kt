@@ -78,7 +78,12 @@ fun MainScreen() {
                 )
             }
             composable(Tab.Favorites.route) { FavoritesScreen() }
-            composable(Tab.NowPlaying.route) { NowPlayingScreen() }
+            composable(Tab.NowPlaying.route) {
+                NowPlayingScreen(
+                    onArtistClick = { id -> nav.navigate("artist/$id") },
+                    onAlbumClick = { id -> nav.navigate("album/$id") },
+                )
+            }
             composable(Tab.Settings.route) { SettingsScreen() }
             composable(
                 route = "artist/{id}",

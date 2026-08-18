@@ -1,8 +1,10 @@
 package dev.pdv.yamulite.ui.main.nowplaying
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,20 +28,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.pdv.yamulite.data.music.dto.ArtistShortDto
 import dev.pdv.yamulite.data.music.dto.TrackDto
 import dev.pdv.yamulite.data.playback.PlaybackUi
 import dev.pdv.yamulite.ui.main.components.CoverImage
 import dev.pdv.yamulite.ui.main.components.FavoriteToggleButton
-import dev.pdv.yamulite.ui.main.components.displayLine
 
 @Composable
-fun NowPlayingScreen(vm: NowPlayingViewModel = hiltViewModel()) {
+fun NowPlayingScreen(
+    onArtistClick: (Long) -> Unit = {},
+    onAlbumClick: (Long) -> Unit = {},
+    vm: NowPlayingViewModel = hiltViewModel(),
+) {
     val state by vm.state.collectAsStateWithLifecycle()
     val likedIds by vm.likedIds.collectAsStateWithLifecycle()
 
@@ -73,6 +80,8 @@ fun NowPlayingScreen(vm: NowPlayingViewModel = hiltViewModel()) {
                     state = state,
                     likedIds = likedIds,
                     vm = vm,
+                    onArtistClick = onArtistClick,
+                    onAlbumClick = onAlbumClick,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -92,6 +101,8 @@ fun NowPlayingScreen(vm: NowPlayingViewModel = hiltViewModel()) {
                     state = state,
                     likedIds = likedIds,
                     vm = vm,
+                    onArtistClick = onArtistClick,
+                    onAlbumClick = onAlbumClick,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -105,6 +116,8 @@ private fun TrackDetails(
     state: PlaybackUi,
     likedIds: Set<String>,
     vm: NowPlayingViewModel,
+    onArtistClick: (Long) -> Unit,
+    onAlbumClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -112,14 +125,57 @@ private fun TrackDetails(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = modifier,
     ) {
-        val displayText = remember(track.id, track.title, track.artists) { track.displayLine() }
-        Text(
-            text = displayText,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center,
+        val hasTitle = !track.title.isNullOrBlank()
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.fillMaxWidth(),
-        )
+        ) {
+            when {
+                hasTitle -> {
+                    Text(
+                        text = track.title!!,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (track.artists.isNotEmpty()) {
+                        ArtistLinks(
+                            artists = track.artists,
+                            style = MaterialTheme.typography.bodyLarge,
+                            onArtistClick = onArtistClick,
+                        )
+                    }
+                }
+                track.artists.isNotEmpty() -> ArtistLinks(
+                    artists = track.artists,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                    onArtistClick = onArtistClick,
+                )
+                else -> Text(
+                    text = "(без названия)",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            track.albums.firstOrNull()?.let { album ->
+                val albumTitle = album.title
+                if (!albumTitle.isNullOrBlank()) {
+                    val clickable = album.id != 0L
+                    Text(
+                        text = albumTitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .let { if (clickable) it.clickable { onAlbumClick(album.id) } else it },
+                    )
+                }
+            }
+        }
         state.error?.let {
             Text("Ошибка: $it", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         }
@@ -155,6 +211,31 @@ private fun TrackDetails(
                 onToggle = vm::toggleLike,
                 modifier = Modifier.size(64.dp),
                 iconSize = 40.dp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArtistLinks(
+    artists: List<ArtistShortDto>,
+    style: TextStyle,
+    onArtistClick: (Long) -> Unit,
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        artists.forEachIndexed { index, artist ->
+            if (index > 0) {
+                Text(", ", style = style, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            val clickable = artist.id != 0L
+            Text(
+                text = artist.name,
+                style = style,
+                color = if (clickable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = if (clickable) Modifier.clickable { onArtistClick(artist.id) } else Modifier,
             )
         }
     }
