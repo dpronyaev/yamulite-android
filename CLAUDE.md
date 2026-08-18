@@ -13,10 +13,12 @@ All Gradle invocations need `JAVA_HOME` pointing at JDK 17 (the project's Kotlin
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 ./gradlew :app:assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/yamulite-*-debug.apk
 adb shell am force-stop dev.pdv.yamulite
 adb shell am start -n dev.pdv.yamulite/.MainActivity
 ```
+
+The APK filename includes `versionName` (set in `app/build.gradle.kts`), e.g. `yamulite-0.1.0-debug.apk` — bump `versionName`/`versionCode` there before cutting a release.
 
 `local.properties` must contain `sdk.dir=...`. SDK setup: `~/Library/Android/sdk` with `platform-tools`, `platforms;android-36`, `build-tools;36.1.0`, `cmdline-tools;latest`, all licenses accepted.
 

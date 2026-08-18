@@ -54,10 +54,10 @@ An unofficial Android client for Yandex Music, written in Kotlin with Jetpack Co
 
 ## Download
 
-A pre-built debug APK is available in [`latest/yamulite.apk`](latest/yamulite.apk).
+A pre-built debug APK is available in [`latest/yamulite-0.1.0.apk`](latest/yamulite-0.1.0.apk).
 
 ```bash
-adb install -r latest/yamulite.apk
+adb install -r latest/yamulite-0.1.0.apk
 ```
 
 ## Build & install
@@ -68,13 +68,13 @@ The Gradle build needs JDK 17:
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 ./gradlew :app:assembleDebug
 
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/yamulite-0.1.0-debug.apk
 adb shell am start -n dev.pdv.yamulite/.MainActivity
 ```
 
 `local.properties` must contain `sdk.dir=...`. The Android SDK should have `platform-tools`, `platforms;android-36`, `build-tools;36.1.0`, `cmdline-tools;latest`, with all licenses accepted.
 
-The debug APK is ~21 MB. First build takes about a minute (downloading dependencies); incremental builds finish in ~5 seconds.
+The APK filename includes `versionName` from `app/build.gradle.kts` (e.g. `yamulite-0.1.0-debug.apk`). The debug APK is ~21 MB. First build takes about a minute (downloading dependencies); incremental builds finish in ~5 seconds.
 
 ## Architecture notes
 
