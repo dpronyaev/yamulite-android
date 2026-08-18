@@ -20,6 +20,7 @@ class SettingsStore @Inject constructor(
     private object Keys {
         val QUALITY = stringPreferencesKey("quality")
         val CODEC = stringPreferencesKey("codec")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     val quality: Flow<Quality> = context.settingsDataStore.data.map { p ->
@@ -40,4 +41,12 @@ class SettingsStore @Inject constructor(
 
     suspend fun currentQuality(): Quality = quality.first()
     suspend fun currentCodec(): CodecPreference = codec.first()
+
+    val themeMode: Flow<ThemeMode> = context.settingsDataStore.data.map { p ->
+        ThemeMode.entries.firstOrNull { it.name == p[Keys.THEME_MODE] } ?: ThemeMode.System
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.settingsDataStore.edit { it[Keys.THEME_MODE] = mode.name }
+    }
 }

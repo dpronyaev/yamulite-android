@@ -12,10 +12,11 @@ An unofficial Android client for Yandex Music, written in Kotlin with Jetpack Co
 - **Search** tracks, artists and albums with debounced queries
 - **Artist** page with popular tracks and full discography
 - **Album** page with the complete track list, cover, year and artists
-- **Favorites** — server-synced liked tracks
+- **Favorites** — server-synced liked tracks, stays in sync when a track is liked/unliked from any other screen; removing a track asks for confirmation first
 - **Now Playing** — large cover, transport controls, seek bar with position / duration, like toggle, adaptive layout for landscape/wide screens
 - **Offline downloads** — per-track download with progress, stored in app-private storage
 - **Quality selector** — Low / Normal / High / Best, applied to both streaming and downloads
+- **Theme selector** — System / Light / Dark, applied instantly app-wide (Material You dynamic color on Android 12+)
 - **Material 3** with bottom navigation (Search / Favorites / Now Playing / Settings)
 - **Coil** for cover art, sharing the app's OkHttp connection pool
 - **Media3 ExoPlayer** for playback, with automatic fallback to local files when a track has been downloaded

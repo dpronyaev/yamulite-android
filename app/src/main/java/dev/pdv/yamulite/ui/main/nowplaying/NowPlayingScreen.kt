@@ -9,12 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.pdv.yamulite.data.music.dto.TrackDto
 import dev.pdv.yamulite.data.playback.PlaybackUi
 import dev.pdv.yamulite.ui.main.components.CoverImage
+import dev.pdv.yamulite.ui.main.components.FavoriteToggleButton
 import dev.pdv.yamulite.ui.main.components.displayLine
 
 @Composable
@@ -152,15 +150,12 @@ private fun TrackDetails(
             ) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "Следующий", modifier = Modifier.size(40.dp))
             }
-            IconButton(onClick = vm::toggleLike, modifier = Modifier.size(64.dp)) {
-                val liked = track.id in likedIds
-                Icon(
-                    imageVector = if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (liked) "Убрать из избранного" else "В избранное",
-                    tint = if (liked) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(40.dp),
-                )
-            }
+            FavoriteToggleButton(
+                isLiked = track.id in likedIds,
+                onToggle = vm::toggleLike,
+                modifier = Modifier.size(64.dp),
+                iconSize = 40.dp,
+            )
         }
     }
 }
