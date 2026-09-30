@@ -54,7 +54,7 @@ An unofficial Android client for Yandex Music, written in Kotlin with Jetpack Co
 
 ## Download
 
-A pre-built debug APK is available in [`latest/yamulite-0.1.0.apk`](latest/yamulite-0.1.0.apk).
+A pre-built, minified release APK (~2.8 MB, self-signed) is available in [`latest/yamulite-0.1.0.apk`](latest/yamulite-0.1.0.apk).
 
 ```bash
 adb install -r latest/yamulite-0.1.0.apk
